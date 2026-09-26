@@ -3,159 +3,202 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tràuna AI – Gaming Thumbnail Generator</title>
+  <title>Tràuna AI – Next-Gen Gaming Thumbnail Generator</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;500;600;700&family=Bangers&display=swap" rel="stylesheet" />
 </head>
 <body>
   <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
 
+  <!-- Header -->
   <header class="site-header">
-    <div class="logo">
-      <span class="logo-t">T</span>r<span class="logo-accent">à</span>una
-      <span class="logo-ai">AI</span>
-    </div>
-    <p class="tagline">Gaming Thumbnail Generator &mdash; Powered by Local AI</p>
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-t">T</span>r<span class="logo-accent">à</span>una
+        <span class="logo-ai">AI</span>
+      </div>
+      <p class="tagline">Local AI YouTube Thumbnail Studio &bull; Powered by SDXL Turbo</p>
 
-    <!-- Navigation Tabs -->
-    <nav class="nav-tabs">
-      <button class="nav-tab active" id="tabBtnGenerator" type="button">🎨 Thumbnail Generator</button>
-      <button class="nav-tab" id="tabBtnCrawler" type="button">📥 Dataset Scraper (YouTube)</button>
-    </nav>
+      <!-- System Status Badges -->
+      <div class="system-status-pills">
+        <span class="status-pill status-pill-active">
+          <span class="pill-dot"></span>
+          <strong>LoRA Active:</strong> 5,000 Steps &bull; Loss 0.0047 (8,851 Samples)
+        </span>
+        <span class="status-pill status-pill-gpu">
+          <span class="pill-dot pill-dot-green"></span>
+          <strong>Hardware:</strong> NVIDIA RTX 3050 6GB &bull; ~3.01 GB Peak VRAM
+        </span>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs">
+        <button class="nav-tab active" id="tabBtnGenerator" type="button">
+          <span class="tab-icon">🎨</span> Thumbnail Studio
+        </button>
+        <button class="nav-tab" id="tabBtnCrawler" type="button">
+          <span class="tab-icon">📥</span> 15k Dataset Crawler
+        </button>
+      </nav>
+    </div>
   </header>
 
   <main class="container">
-    <!-- View 1: Generator -->
+    <!-- View 1: Generator Studio -->
     <div id="generatorView">
       <form id="generateForm" enctype="multipart/form-data">
 
-      <!-- Unified Creative Studio Card -->
-      <section class="card prompt-card">
-        <div class="prompt-header">
-          <div>
-            <h2 class="section-title">
-              🎨 Describe Your Thumbnail Idea
-              <span class="badge-lora">Rank 24 LoRA Active (1,200 Steps)</span>
-            </h2>
-            <p class="section-desc">Type your idea in plain English. No trigger tokens needed — the AI automatically enhances lighting, facial emotion, and composition.</p>
-          </div>
-          <div class="header-actions">
-            <!-- Quality Mode Selector -->
-            <div class="quality-toggle-group">
-              <button type="button" class="btn-quality" data-quality="fast" id="btnQualityFast">⚡ Fast (45s)</button>
-              <button type="button" class="btn-quality active" data-quality="ultra" id="btnQualityUltra">🔥 Ultra Detail</button>
-              <input type="hidden" id="qualityMode" name="qualityMode" value="ultra" />
+        <!-- Prompt Studio Card -->
+        <section class="card prompt-card glow-card">
+          <div class="prompt-header">
+            <div>
+              <h2 class="section-title">
+                🎨 Creative Concept & Prompt
+                <span class="badge-lora">Auto-Enhanced &bull; Zero Trigger Tokens Needed</span>
+              </h2>
+              <p class="section-desc">Type what you want to see. The model automatically orchestrates three-zone lighting, facial emotion, and sharp foreground separation.</p>
             </div>
-            <button type="button" class="btn-clear" id="clearPromptBtn" title="Clear prompt">✕ Clear</button>
+            <div class="header-actions">
+              <!-- Quality Mode Selector -->
+              <div class="quality-toggle-group">
+                <button type="button" class="btn-quality" data-quality="fast" id="btnQualityFast" title="1024x576 native bucket, 4 steps (~25s)">⚡ Fast (25s)</button>
+                <button type="button" class="btn-quality" data-quality="standard" id="btnQualityStandard" title="1152x648 native bucket, 4 steps (~35s)">✨ Standard HD</button>
+                <button type="button" class="btn-quality active" data-quality="ultra" id="btnQualityUltra" title="1152x648 native bucket, high detail (~40s)">🔥 Ultra 720p Pro</button>
+                <input type="hidden" id="qualityMode" name="qualityMode" value="ultra" />
+              </div>
+              <button type="button" class="btn-clear" id="clearPromptBtn" title="Clear prompt">✕ Clear</button>
+            </div>
           </div>
+
+          <textarea
+            id="customPrompt"
+            name="prompt"
+            class="textarea-input prompt-textarea"
+            placeholder="e.g. BeastBoyShub screaming in shock with glowing headphones, Minecraft hardcore nether fortress with flying blazes and lava sparks in background..."
+            rows="3"
+          ></textarea>
+
+          <!-- Prompt Preset Vibe Chips -->
+          <div class="prompt-presets">
+            <span class="preset-label">Trending Styles:</span>
+            <button type="button" class="chip-preset" data-idea="BeastBoyShub screaming reaction face with headphones, Minecraft hardcore survival, glowing lava and blazes, high contrast rim lighting">👑 BeastBoyShub MC</button>
+            <button type="button" class="chip-preset" data-idea="TechnoGamerz focused intense gaming reaction, GTA 5 supercar ramp jump over police cars, massive fire explosion, neon Los Santos lighting">🎮 TechnoGamerz GTA</button>
+            <button type="button" class="chip-preset" data-idea="Sourav Joshi vlogger surprise reaction face with mouth open, colorful outdoor scenic mountains, vlog adventure style, vivid sunlight">📹 Vlogger Surprise</button>
+            <button type="button" class="chip-preset" data-idea="MrBeast extreme survival challenge, shocked gamer reaction face, dangerous high-stakes arena, cinematic vibrant studio lighting">🔥 MrBeast Style</button>
+            <button type="button" class="chip-preset" data-idea="Terrified gamer streamer face in dark abandoned asylum corridor, single flashlight beam piercing shadows, eerie silhouette looming in fog, pure horror jump-scare">😱 Horror Asylum</button>
+            <button type="button" class="chip-preset" data-idea="Heroic warrior in netherite armor on cliff, giant Ender Dragon flying above in stormy purple void sky with lightning, dramatic cinematic low angle">⛏️ 100 Days Epic</button>
+            <button type="button" class="chip-preset" data-idea="High speed neon supercar police chase at midnight in Los Santos, streamer laughing in excitement, light trails and motion blur">🚗 GTA Heist</button>
+            <button type="button" class="chip-preset" data-idea="Tactical FPS clutch moment, Valorant neon abilities glow, streamer intense sniper aim, smoke and bullet tracers">🎯 Tactical FPS</button>
+          </div>
+        </section>
+
+        <!-- Image Upload Card (Primary & Context) -->
+        <section class="card upload-composite-card">
+          <div class="upload-split">
+            <!-- Primary Image -->
+            <div class="upload-col">
+              <h3 class="subsection-title">👤 Face / Streamer Avatar <span class="optional">Optional</span></h3>
+              <p class="subsection-desc">Upload your face or character to anchor the main subject.</p>
+              <label class="upload-zone" id="primaryDropZone">
+                <input type="file" id="primaryImage" name="primaryImage" accept="image/*" hidden />
+                <div class="upload-icon">&#128247;</div>
+                <div class="upload-label">Upload Face / Avatar</div>
+                <div class="upload-sub">PNG, JPG, WEBP &bull; Max 20MB</div>
+                <img id="primaryPreview" class="preview-img hidden" alt="Primary preview" />
+              </label>
+            </div>
+
+            <!-- Gameplay Screenshot -->
+            <div class="upload-col">
+              <h3 class="subsection-title">🎮 Gameplay Screenshot <span class="optional">Optional</span></h3>
+              <p class="subsection-desc">Provide game context for background scene reference.</p>
+              <label class="upload-zone" id="screenshotDropZone">
+                <input type="file" id="gameplayScreenshot" name="gameplayScreenshot" accept="image/*" hidden />
+                <div class="upload-icon">&#127918;</div>
+                <div class="upload-label">Upload Screenshot</div>
+                <div class="upload-sub">In-game context or map</div>
+                <img id="screenshotPreview" class="preview-img hidden" alt="Screenshot preview" />
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- Game / Category Selection -->
+        <section class="card">
+          <h2 class="section-title">🎯 Game & Content Category</h2>
+          <p class="section-desc">Select a category to apply specialized color grading and atmospheric lighting presets.</p>
+          <div class="game-grid" id="gameGrid">
+            <!-- Populated dynamically by JS -->
+          </div>
+          <input type="hidden" id="selectedGame" name="game" value="" />
+        </section>
+
+        <!-- Thumbnail Text Studio Overlay Card -->
+        <section class="card text-overlay-card">
+          <div class="text-overlay-header">
+            <div>
+              <h2 class="section-title">🔤 Thumbnail Text Overlay <span class="optional">Optional</span></h2>
+              <p class="section-desc">Programmatic high-contrast SVG text rendered on top of the thumbnail with zero AI distortion.</p>
+            </div>
+          </div>
+
+          <div class="form-row text-styling-row">
+            <div class="form-group flex-2">
+              <input
+                type="text"
+                id="thumbnailText"
+                name="thumbnailText"
+                class="text-input font-bold-input"
+                placeholder="e.g. 100 DAYS, NO WAY!, BUSTED!, SURVIVED!"
+                maxlength="50"
+              />
+            </div>
+
+            <div class="form-group text-color-picker">
+              <span class="picker-label">Color:</span>
+              <button type="button" class="color-chip active" data-color="#FFFFFF" style="background: #FFFFFF;" title="White"></button>
+              <button type="button" class="color-chip" data-color="#FFD700" style="background: #FFD700;" title="Viral Yellow"></button>
+              <button type="button" class="color-chip" data-color="#00E5FF" style="background: #00E5FF;" title="Neon Cyan"></button>
+              <button type="button" class="color-chip" data-color="#FF1744" style="background: #FF1744;" title="Danger Red"></button>
+              <input type="hidden" id="textColor" name="textColor" value="#FFFFFF" />
+            </div>
+
+            <div class="form-group text-pos-toggle">
+              <span class="picker-label">Position:</span>
+              <button type="button" class="btn-pos active" data-pos="bottom">Bottom</button>
+              <button type="button" class="btn-pos" data-pos="top">Top</button>
+              <input type="hidden" id="textPosition" name="textPosition" value="bottom" />
+            </div>
+          </div>
+        </section>
+
+        <!-- Video Description (Optional Context) -->
+        <section class="card">
+          <h2 class="section-title">📝 Video Description <span class="optional">Optional</span></h2>
+          <p class="section-desc">Briefly describe what happens in your video for additional narrative nuance.</p>
+          <textarea
+            id="videoDescription"
+            name="videoDescription"
+            class="textarea-input"
+            placeholder="e.g. I challenged 100 players to survive in an inescapable prison suspended above lava..."
+            rows="3"
+            maxlength="500"
+          ></textarea>
+          <div class="char-count"><span id="descCount">0</span> / 500</div>
+        </section>
+
+        <!-- Generate Button -->
+        <div class="generate-wrap">
+          <button type="submit" class="btn-generate" id="generateBtn">
+            <span class="btn-icon">⚡</span>
+            <span class="btn-text">GENERATE HIGH-CTR THUMBNAIL</span>
+            <span class="btn-loader hidden" id="btnLoader"></span>
+          </button>
+          <p class="generate-note">Accelerated by SDXL Turbo &bull; 4 steps &bull; Native 16:9 bucket &bull; Local RTX 3050</p>
         </div>
-
-        <textarea
-          id="customPrompt"
-          name="prompt"
-          class="textarea-input prompt-textarea"
-          placeholder="e.g. BeastBoyShub screaming in panic while running from a giant mutant creeper in Minecraft nether, glowing lava and sparks in background..."
-          rows="3"
-        ></textarea>
-
-        <div class="prompt-presets">
-          <span class="preset-label">Quick Vibes:</span>
-          <button type="button" class="chip-preset" data-idea="BeastBoyShub excited reaction face, Minecraft hardcore survival world, glowing lava and blazes, high contrast dramatic lighting">👑 BeastBoyShub MC</button>
-          <button type="button" class="chip-preset" data-idea="TechnoGamerz epic gaming setup, GTA 5 supercar ramp jump over police cars, massive fire explosion, neon Los Santos lighting">🎮 TechnoGamerz</button>
-          <button type="button" class="chip-preset" data-idea="MrBeast extreme survival challenge, shocked gamer reaction face with open mouth, dangerous high-stakes arena, cinematic lighting">🔥 MrBeast Style</button>
-          <button type="button" class="chip-preset" data-idea="Terrified gamer streamer face in dark abandoned mansion, Resident Evil zombie horde emerging from fog with flashlight beam, pure horror jump-scare">😱 Horror / RE</button>
-          <button type="button" class="chip-preset" data-idea="High speed supercar police chase in GTA Los Santos, streamer laughing in excitement, flying sports car, dramatic action">🚗 GTA Heist</button>
-          <button type="button" class="chip-preset" data-idea="Tactical FPS clutch moment, Valorant neon abilities glow, streamer intense sniper aim, smoke and bullet tracers">🎯 Tactical FPS</button>
-        </div>
-      </section>
-
-      <!-- Primary Image -->
-      <section class="card">
-        <h2 class="section-title">Primary Image</h2>
-        <p class="section-desc">Upload your face, avatar, or main subject.</p>
-        <label class="upload-zone" id="primaryDropZone">
-          <input type="file" id="primaryImage" name="primaryImage" accept="image/*" hidden />
-          <div class="upload-icon">&#128247;</div>
-          <div class="upload-label">Click or drag to upload</div>
-          <div class="upload-sub">PNG, JPG, WEBP &bull; max 20 MB</div>
-          <img id="primaryPreview" class="preview-img hidden" alt="Primary preview" />
-        </label>
-      </section>
-
-      <!-- Additional Images -->
-      <section class="card">
-        <h2 class="section-title">Additional Images <span class="optional">Optional</span></h2>
-        <p class="section-desc">Co-op partner, extra characters, logos.</p>
-        <label class="upload-zone" id="additionalDropZone">
-          <input type="file" id="additionalImages" name="additionalImages" accept="image/*" multiple hidden />
-          <div class="upload-icon">&#43;</div>
-          <div class="upload-label">Add Images</div>
-          <div class="upload-sub">Select multiple files</div>
-        </label>
-        <div id="additionalPreviews" class="preview-grid"></div>
-      </section>
-
-      <!-- Gameplay Screenshot -->
-      <section class="card">
-        <h2 class="section-title">Gameplay Screenshot <span class="optional">Optional</span></h2>
-        <p class="section-desc">Provide context for the background scene.</p>
-        <label class="upload-zone" id="screenshotDropZone">
-          <input type="file" id="gameplayScreenshot" name="gameplayScreenshot" accept="image/*" hidden />
-          <div class="upload-icon">&#127918;</div>
-          <div class="upload-label">Click or drag to upload</div>
-          <div class="upload-sub">PNG, JPG, WEBP</div>
-          <img id="screenshotPreview" class="preview-img hidden" alt="Screenshot preview" />
-        </label>
-      </section>
-
-      <!-- Game Selection -->
-      <section class="card">
-        <h2 class="section-title">Game / Category</h2>
-        <div class="game-grid" id="gameGrid">
-          <!-- Populated by JS -->
-        </div>
-        <input type="hidden" id="selectedGame" name="game" value="" />
-      </section>
-
-      <!-- Video Description -->
-      <section class="card">
-        <h2 class="section-title">Video Description <span class="optional">Optional</span></h2>
-        <p class="section-desc">Briefly describe what the video is about.</p>
-        <textarea
-          id="videoDescription"
-          name="videoDescription"
-          class="textarea-input"
-          placeholder="e.g. I survived 100 days in hardcore Minecraft..."
-          rows="4"
-          maxlength="500"
-        ></textarea>
-        <div class="char-count"><span id="descCount">0</span> / 500</div>
-      </section>
-
-      <!-- Thumbnail Text -->
-      <section class="card">
-        <h2 class="section-title">Thumbnail Text <span class="optional">Optional</span></h2>
-        <p class="section-desc">Text that will be overlaid on the final thumbnail.</p>
-        <input
-          type="text"
-          id="thumbnailText"
-          name="thumbnailText"
-          class="text-input"
-          placeholder="e.g. 100 DAYS"
-          maxlength="60"
-        />
-      </section>
-
-      <!-- Generate Button -->
-      <div class="generate-wrap">
-        <button type="submit" class="btn-generate" id="generateBtn">
-          <span class="btn-text">GENERATE THUMBNAIL</span>
-          <span class="btn-loader hidden" id="btnLoader"></span>
-        </button>
-        <p class="generate-note">Generation takes ~30–45 seconds with trained LoRA on RTX 3050.</p>
-      </div>
 
       </form>
 
@@ -166,7 +209,7 @@
             <span class="progress-spin-icon">&#9881;</span>
             <span class="progress-phase" id="progressPhase">Generating Thumbnail...</span>
           </div>
-          <div class="progress-eta-badge" id="progressEtaBadge">ETA: ~40s</div>
+          <div class="progress-eta-badge" id="progressEtaBadge">ETA: ~35s</div>
         </div>
 
         <div class="progress-track">
@@ -174,14 +217,21 @@
         </div>
 
         <div class="progress-bottom">
-          <span class="progress-detail" id="progressDetail">Initializing SDXL Turbo & LoRA weights...</span>
+          <span class="progress-detail" id="progressDetail">Synthesizing latents with 5,000-step Gaming LoRA...</span>
           <span class="progress-elapsed" id="progressElapsed">Elapsed: 0s</span>
         </div>
       </section>
 
-      <!-- Results Section -->
-      <section class="results-section hidden" id="resultsSection" style="margin-top: 28px;">
-        <h2 class="results-title">Generated Gaming Thumbnails</h2>
+      <!-- Results & YouTube Simulator Section -->
+      <section class="results-section hidden" id="resultsSection">
+        <div class="results-header">
+          <h2 class="results-title">Generated Thumbnail Studio</h2>
+          <div class="view-mode-toggle">
+            <button type="button" class="btn-view-toggle active" id="btnViewClean">🖼️ Master PNG</button>
+            <button type="button" class="btn-view-toggle" id="btnViewFeed">📺 YouTube Feed Simulator</button>
+          </div>
+        </div>
+
         <div class="results-grid" id="resultsGrid"></div>
       </section>
 
@@ -190,43 +240,53 @@
     <!-- View 2: Dataset Crawler -->
     <div id="crawlerView" class="hidden">
       <section class="card">
-        <h2 class="section-title">📥 YouTube Thumbnail Scraper</h2>
+        <div class="crawler-header-badge">
+          <span class="status-pill status-pill-active">
+            <span class="pill-dot"></span>
+            <strong>Active Worker:</strong> 24 Threads &bull; 55 New Channels
+          </span>
+          <span class="status-pill status-pill-gpu" id="crawlerTotalScrapedBadge">
+            <strong>Fresh Scraped:</strong> 2,420+ Thumbnails
+          </span>
+        </div>
+
+        <h2 class="section-title">📥 15,000 Thumbnails Crawler (Indian & International)</h2>
         <p class="section-desc">
-          Automatically scrape high-resolution thumbnails, generate training captions, and organize them into:
-          <br /><code>dataset/creators/&lt;YouTuber&gt;/&lt;Game&gt;/thumbnails/</code>
+          Automated scraper for high-impact YouTube thumbnails. All 51 previously trained creators are strictly excluded to avoid duplicate data.
+          <br />Saves to: <code>dataset/creators/&lt;Creator&gt;/&lt;Category&gt;/thumbnails/</code>
         </p>
 
         <form id="crawlerForm">
           <div class="form-group">
-            <label class="input-label" for="crawlTarget">Channel URL, Playlist URL, or Search Query</label>
+            <label class="input-label" for="crawlTarget">Channel URL or Playlist URL</label>
             <input
               type="text"
               id="crawlTarget"
               class="text-input"
-              value="https://www.youtube.com/@BeastBoyShub/videos"
-              placeholder="e.g. https://www.youtube.com/@BeastBoyShub/videos"
+              value="https://www.youtube.com/@CaseyNeistat/videos"
+              placeholder="e.g. https://www.youtube.com/@CaseyNeistat/videos"
               required
             />
           </div>
 
           <div class="form-row">
             <div class="form-group flex-1">
-              <label class="input-label" for="crawlCreator">Creator / YouTuber Name</label>
+              <label class="input-label" for="crawlCreator">Creator Name</label>
               <input
                 type="text"
                 id="crawlCreator"
                 class="text-input"
-                value="BeastBoyShub"
-                placeholder="e.g. BeastBoyShub"
+                value="CaseyNeistat"
+                placeholder="e.g. CaseyNeistat"
               />
             </div>
             <div class="form-group flex-1">
-              <label class="input-label" for="crawlGame">Game Name Override <span class="optional">Optional</span></label>
+              <label class="input-label" for="crawlGame">Category / Genre <span class="optional">Optional</span></label>
               <input
                 type="text"
                 id="crawlGame"
                 class="text-input"
-                placeholder="Leave blank for auto-detection"
+                placeholder="Vlogs, Challenges, Minecraft, GTA..."
               />
             </div>
             <div class="form-group" style="width: 140px;">
@@ -235,30 +295,31 @@
                 type="number"
                 id="crawlLimit"
                 class="text-input"
-                value="30"
-                min="1"
-                max="200"
+                value="260"
+                min="10"
+                max="500"
               />
             </div>
           </div>
 
           <div class="generate-wrap" style="text-align: left; margin-top: 16px;">
             <button type="submit" class="btn-generate" id="crawlBtn">
-              <span class="btn-text">START SCRAPING</span>
+              <span class="btn-icon">⚡</span>
+              <span class="btn-text">START TARGET SCRAPE</span>
               <span class="btn-loader hidden" id="crawlLoader"></span>
             </button>
           </div>
         </form>
       </section>
 
-      <!-- Crawler Progress Box -->
-      <section class="card hidden" id="crawlerProgressCard" style="margin-top: 20px;">
-        <h2 class="section-title">Scraper Activity Log</h2>
-        <pre id="crawlerLog" class="crawler-log-box">Waiting for crawler to start...</pre>
+      <!-- Crawler Activity Box -->
+      <section class="card" id="crawlerProgressCard" style="margin-top: 20px;">
+        <h2 class="section-title">Live Scraper Activity Log</h2>
+        <pre id="crawlerLog" class="crawler-log-box">Crawler is running in background: 55 fresh channels actively downloading thumbnails, captions, and metadata...</pre>
       </section>
     </div><!-- /#crawlerView -->
 
-    <!-- Status / Error -->
+    <!-- Status & Error Toasts -->
     <div class="status-bar hidden" id="statusBar">
       <span class="status-icon">&#9881;</span>
       <span id="statusText">Generating...</span>
@@ -268,8 +329,21 @@
     </div>
   </main>
 
+  <!-- Fullscreen Lightbox Modal -->
+  <div class="lightbox-modal hidden" id="lightboxModal">
+    <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
+    <div class="lightbox-content">
+      <button type="button" class="btn-lightbox-close" id="lightboxCloseBtn" title="Close (Esc)">✕</button>
+      <img src="" alt="Thumbnail Fullscreen" class="lightbox-img" id="lightboxImg" />
+      <div class="lightbox-footer">
+        <span class="lightbox-dim">1280 &times; 720 (16:9 Master)</span>
+        <a href="" download="trauna-master.png" class="btn-download" id="lightboxDownload">📥 Download Master PNG</a>
+      </div>
+    </div>
+  </div>
+
   <footer class="site-footer">
-    <p>Tràuna AI &bull; Local Development Build &bull; RTX 3050</p>
+    <p>Tràuna AI &bull; Production v1.2.0 &bull; Local RTX 3050 6GB GPU &bull; 8,851 Creator Trained Weights</p>
   </footer>
 
   <script src="app.js"></script>

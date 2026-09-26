@@ -24,6 +24,8 @@ const TARGET_HEIGHT = 720;
  * @param {string}  options.generatedImagePath - Path to AI-generated image
  * @param {string|null} options.primaryImagePath - Optional uploaded primary image
  * @param {string}  options.thumbnailText      - Optional text overlay
+ * @param {string}  options.textColor          - Optional hex color (default #FFFFFF)
+ * @param {string}  options.textPosition       - 'bottom' or 'top' (default 'bottom')
  * @param {string}  options.outputDir          - Directory to write output
  * @returns {Promise<string>} - Path to final PNG
  */
@@ -32,6 +34,8 @@ async function compose(options) {
     generatedImagePath,
     primaryImagePath = null,
     thumbnailText = '',
+    textColor = '#FFFFFF',
+    textPosition = 'bottom',
     outputDir,
   } = options;
 
@@ -50,7 +54,7 @@ async function compose(options) {
 
   // ── Step 2: Build SVG text overlay (if text provided) ───────
   if (thumbnailText && thumbnailText.trim()) {
-    const svgOverlay = buildTextSvg(thumbnailText.trim(), TARGET_WIDTH, TARGET_HEIGHT);
+    const svgOverlay = buildTextSvg(thumbnailText.trim(), TARGET_WIDTH, TARGET_HEIGHT, textColor, textPosition);
     const svgBuffer  = Buffer.from(svgOverlay);
 
     const baseBuffer = await pipeline.png().toBuffer();
@@ -93,14 +97,14 @@ async function compose(options) {
 }
 
 /**
- * buildTextSvg(text, width, height) -> string
+ * buildTextSvg(text, width, height, textColor, textPosition) -> string
  *
- * Creates an SVG with bold gaming-style text overlay.
- * Text is placed at bottom with a gradient backing for readability.
+ * Creates an SVG with bold viral gaming-style text overlay.
  */
-function buildTextSvg(text, width, height) {
+function buildTextSvg(text, width, height, textColor = '#FFFFFF', textPosition = 'bottom') {
+  const isTop      = textPosition === 'top';
   const fontSize   = Math.round(height * 0.13);   // ~94px on 720p
-  const textY      = height - Math.round(height * 0.08);
+  const textY      = isTop ? Math.round(height * 0.18) : height - Math.round(height * 0.08);
   const shadowBlur = Math.round(fontSize * 0.15);
   const strokeW    = Math.round(fontSize * 0.06);
 
@@ -111,19 +115,23 @@ function buildTextSvg(text, width, height) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
+  const bgRectY = isTop ? 0 : height * 0.6;
+  const gradY1 = isTop ? '1' : '0';
+  const gradY2 = isTop ? '0' : '1';
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
   <defs>
     <filter id="shadow">
-      <feDropShadow dx="0" dy="4" stdDeviation="${shadowBlur}" flood-color="rgba(0,0,0,0.9)" />
+      <feDropShadow dx="0" dy="4" stdDeviation="${shadowBlur}" flood-color="rgba(0,0,0,0.95)" />
     </filter>
-    <linearGradient id="textBg" x1="0" y1="0" x2="0" y2="1">
+    <linearGradient id="textBg" x1="0" y1="${gradY1}" x2="0" y2="${gradY2}">
       <stop offset="0%" stop-color="rgba(0,0,0,0)" />
-      <stop offset="100%" stop-color="rgba(0,0,0,0.75)" />
+      <stop offset="100%" stop-color="rgba(0,0,0,0.8)" />
     </linearGradient>
   </defs>
 
   <!-- Gradient backing for readability -->
-  <rect x="0" y="${height * 0.6}" width="${width}" height="${height * 0.4}"
+  <rect x="0" y="${bgRectY}" width="${width}" height="${height * 0.4}"
         fill="url(#textBg)" />
 
   <!-- Outline / stroke pass -->
@@ -140,14 +148,14 @@ function buildTextSvg(text, width, height) {
     letter-spacing="4"
   >${safeText}</text>
 
-  <!-- Main text -->
+  <!-- Main text with custom color -->
   <text
     x="${width / 2}" y="${textY}"
     text-anchor="middle"
     font-family="Impact, Arial Black, sans-serif"
     font-size="${fontSize}"
     font-weight="900"
-    fill="#FFFFFF"
+    fill="${textColor}"
     filter="url(#shadow)"
     letter-spacing="4"
   >${safeText}</text>

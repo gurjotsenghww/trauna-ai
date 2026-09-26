@@ -60,6 +60,8 @@ router.post('/', uploadFields, async (req, res) => {
       game            = '',
       videoDescription = '',
       thumbnailText   = '',
+      textColor       = '#FFFFFF',
+      textPosition    = 'bottom',
       qualityMode     = null,
       negativePrompt: customNegative = '',
       guidanceScale: customGuidance = null,
@@ -109,22 +111,23 @@ router.post('/', uploadFields, async (req, res) => {
     const rawNegative = customNegative || req.body.negative_prompt;
     const negativePrompt = promptEnhancer.buildNegativePrompt(rawNegative);
 
-    // Guidance scale: default to 1.5 so classifier-free guidance activates negative prompt conditioning matrix in Diffusers
+    // SDXL Turbo is an Adversarial Diffusion Distillation (ADD) model.
+    // Guidance scale must default to 0.0 (or 0.0 if not specified), and steps must be 4 max.
+    // Guidance > 1.0 or steps > 4 causes latent manifold tearing and duplicate/conjoined heads.
     const rawGuidance = customGuidance != null ? customGuidance : req.body.guidance_scale;
     const guidanceScale = (rawGuidance != null && rawGuidance !== '' && !isNaN(parseFloat(rawGuidance)))
       ? parseFloat(rawGuidance)
-      : 1.5;
+      : 0.0;
 
-    // Determine steps based on Quality Mode: Ultra (6 steps), Standard (4 steps), Fast (4 steps)
-    const defaultSteps = (normalizedQualityMode === 'ultra') ? 6 : 4;
-    const numSteps = customSteps && !isNaN(parseInt(customSteps, 10)) ? parseInt(customSteps, 10) : defaultSteps;
+    // Cap steps at 4 for SDXL Turbo to prevent over-denoising and secondary subject nucleation
+    const defaultSteps = 4;
+    const numSteps = customSteps && !isNaN(parseInt(customSteps, 10)) ? Math.min(parseInt(customSteps, 10), 4) : defaultSteps;
 
-    // Decouple AI generation resolution from final 1280x720 thumbnail size:
-    // Native SDXL aspect-ratio buckets eliminate dual-subject / conjoined nucleation:
-    //   - Standard / Ultra: 1344x768 (native 16:9 ~1.03 MP training bucket)
-    //   - Fast: 1024x576 (native 16:9 ~0.59 MP preview bucket)
-    const defaultWidth  = isFast ? 1024 : 1344;
-    const defaultHeight = isFast ? 576  : 768;
+    // Aspect-ratio buckets:
+    //   - Standard / Ultra: 1152x648 (optimal 16:9 bucket avoiding wide-canvas duplicate nucleation)
+    //   - Fast: 1024x576 (preview bucket)
+    const defaultWidth  = isFast ? 1024 : 1152;
+    const defaultHeight = isFast ? 576  : 648;
     const nativeWidth   = req.body.width ? parseInt(req.body.width, 10) : defaultWidth;
     const nativeHeight  = req.body.height ? parseInt(req.body.height, 10) : defaultHeight;
 
@@ -145,6 +148,8 @@ router.post('/', uploadFields, async (req, res) => {
       generatedImagePath,
       primaryImagePath,
       thumbnailText,
+      textColor,
+      textPosition,
       outputDir: path.join(__dirname, '..', 'outputs'),
     });
 
