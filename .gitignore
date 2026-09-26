@@ -1,0 +1,54 @@
+# Tràuna AI — .gitignore
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Python virtual environment
+ai/venv/
+ai/.venv/
+
+# Uploaded files
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Generated outputs
+backend/outputs/*
+!backend/outputs/.gitkeep
+ai/outputs/*
+!ai/outputs/.gitkeep
+
+# Hugging Face model cache & temporary model files
+ai/models/cache/
+*.bin
+
+# Training latents cache & intermediate step checkpoints
+ai/cache/
+ai/models/lora/sdxl-lora-step-*
+dataset/training_ready*/images/
+dataset/training_creators_3000/images/
+dataset/creators/
+
+# Internal teamwork agent run logs
+.agents/
+
+# Environment variables & secrets
+.env
+.env.local
+*cookies.txt
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Logs
+npm-debug.log*
+*.log

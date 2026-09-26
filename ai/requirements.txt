@@ -1,0 +1,26 @@
+# Tràuna AI — Python AI Requirements
+# Install with: pip install -r requirements.txt
+#
+# IMPORTANT: Install PyTorch with CUDA FIRST:
+#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+# Then install the rest:
+#   pip install -r requirements.txt
+
+# Core AI
+diffusers>=0.27.0
+transformers>=4.38.0
+accelerate>=0.27.0
+safetensors>=0.4.2
+
+# Image processing
+pillow>=10.2.0
+
+# Utilities
+numpy>=1.26.0
+huggingface_hub>=0.21.0
+
+# Optional: sentencepiece for some tokenizers
+sentencepiece>=0.1.99
+
+# Optional: protobuf for some model configs
+protobuf>=4.25.0
