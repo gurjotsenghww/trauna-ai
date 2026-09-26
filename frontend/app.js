@@ -180,7 +180,7 @@ function buildGameChips() {
     chip.dataset.game = g.id;
     chip.innerHTML = `<span>${g.emoji}</span><span>${g.label}</span>`;
     chip.addEventListener('click', () => selectGame(g.id, chip));
-    gameGrid.appendChild(chip));
+    gameGrid.appendChild(chip);
   });
 }
 
