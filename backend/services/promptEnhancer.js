@@ -1,24 +1,19 @@
 /**
  * Tràuna AI — services/promptEnhancer.js
  *
- * Smart Context-Aware Prompt Enhancer & Spatial Composer (Milestone 3 / R3).
- * - Eliminates the need for users to type trigger tokens or technical tags.
- * - Automatically injects the LoRA trigger: `traunathumb, professional youtube gaming thumbnail`.
- * - ACCURACY & GLITCH ELIMINATION: Respects the user's intended subject. If the user asks
- *   for a cat, car, sword, monster, or environment, it NEVER injects unrelated streamer faces.
- * - CONTEXT-AWARE THREE-ZONE SPATIAL COMPOSITION GRAMMAR (R3):
- *     Zone 1 (Foreground Subject): Explicit positioning ('foreground solo subject on the right'
- *       or 'foreground streamer portrait on the right'), strict single-subject tags ('solo,
- *       exactly one person, single subject, sharp focus'), clean anatomy and facial features
- *       ('clean skin, realistic skin texture, coherent eyes, expressive mouth, zero monster features,
- *       zero mutant traits').
- *     Zone 2 (Optical Depth Demarcation): 'optical bokeh, shallow depth of field, blurred
- *       background, strong depth separation between foreground and background'.
- *     Zone 3 (Distant Background): Game world threats, monsters, environment placed strictly
- *       in the background / opposite third ('in the deep background on the left', 'distant
- *       Minecraft creeper behind subject, isolated from foreground character').
- * - ANTI-HYBRID & ANTI-DUPLICATION NEGATIVE MATRIX:
- *     Expanded negative prompt preventing conjoined heads, dual heads, and human-monster blending.
+ * Compact Spatial Composer & Anti-Duplication Prompt Engine.
+ *
+ * CRITICAL ARCHITECTURAL CONSTRAINTS:
+ * 1. CLIP 77-Token Hard Limit: SDXL/Diffusers CLIP text encoder truncates prompts past
+ *    token 77. Any prompt exceeding 77 tokens loses all background/environment context,
+ *    flooding the UNet with subject tokens and causing 2-headed conjoined duplicates.
+ * 2. Compact Spatial Composition: Total prompt is strictly kept <= 45 words (~50-60 tokens).
+ * 3. Two-Sided Latent Separation:
+ *    - Foreground subject is anchored to the right ('solo ... on the right')
+ *    - Background / world / threat is anchored to the left ('... on the left')
+ *    - LoRA trigger: 'traunathumb, youtube thumbnail'
+ *    - Format suffix: 'cinematic lighting, 16:9'
+ * 4. Zero Redundant Boilerplate: Does not inject repetitive synonym phrases that waste tokens.
  */
 
 'use strict';
@@ -51,33 +46,43 @@ function buildNegativePrompt(customNegative = '') {
 const CREATOR_PATTERNS = {
   beastboyshub: {
     match: /\b(beastboyshub|bbs|shub)\b/i,
-    face: 'BeastBoyShub screaming excited reaction face with headphones',
-    lighting: 'vibrant colorful rim lighting, high contrast',
+    face: 'BeastBoyShub screaming reaction face with headphones',
+    defaultWorld: 'Minecraft hardcore nether fortress with glowing lava',
   },
   technogamerz: {
     match: /\b(technogamerz|techno\s*gamerz|ujjw?al)\b/i,
     face: 'TechnoGamerz focused intense gaming reaction',
-    lighting: 'vibrant GTA neon lighting, rim lights',
+    defaultWorld: 'Los Santos neon city street with supercar',
   },
   mrbeast: {
     match: /\b(mrbeast|mr\s*beast|jimmy)\b/i,
     face: 'MrBeast shocked reaction face with open mouth',
-    lighting: 'bright commercial lighting, high saturation',
+    defaultWorld: 'dangerous survival challenge arena',
   },
   coryxkenshin: {
     match: /\b(coryxkenshin|cory\s*kenshin|shogun)\b/i,
-    face: 'CoryxKenshin terrified jump-scare scream',
-    lighting: 'horror shadows, single flashlight beam, cold blue rim',
+    face: 'CoryxKenshin terrified reaction face screaming',
+    defaultWorld: 'dark haunted hallway with eerie shadows',
   },
   markiplier: {
     match: /\b(markiplier|mark)\b/i,
     face: 'Markiplier horrified screaming reaction with headphones',
-    lighting: 'dark atmospheric horror lighting, cold blue rim',
+    defaultWorld: 'dark abandoned asylum with flickering lights',
   },
   pewdiepie: {
     match: /\b(pewdiepie|felix)\b/i,
     face: 'PewDiePie energetic gaming reaction face with headphones',
-    lighting: 'vibrant colorful studio lighting',
+    defaultWorld: 'colorful modern gaming studio',
+  },
+  souravjoshi: {
+    match: /\b(sourav\s*joshi|sourav)\b/i,
+    face: 'Sourav Joshi surprised vlogger reaction face',
+    defaultWorld: 'scenic mountain vlog landscape with vivid sunlight',
+  },
+  carryminati: {
+    match: /\b(carryminati|carry|ajey)\b/i,
+    face: 'CarryMinati intense expressive reaction face with mic',
+    defaultWorld: 'high contrast neon studio background',
   },
 };
 
@@ -85,33 +90,27 @@ const CREATOR_PATTERNS = {
 const GENRE_PATTERNS = {
   minecraft: {
     match: /\b(minecraft|mc|creeper|nether|enderman|herobrine|warden|diamond|hardcore|redstone|crafting|steve|alex|piglin|wither)\b/i,
-    threat: 'distant Minecraft creeper behind subject, isolated from foreground character',
-    world: 'blocky 3D voxel Minecraft world, glowing torches',
-    atmosphere: 'epic survival adventure',
+    world: 'blocky 3D Minecraft world with glowing torches',
   },
   horror: {
-    match: /\b(horror|resident\s*evil|re4|re2|re8|biohazard|zombie|zombies|scary|ghost|haunted|fnaf|five\s*nights|slender|chucky|jumpscare)\b/i,
-    threat: 'distant terrifying zombie silhouette behind subject, isolated from foreground character',
-    world: 'terrifying dark abandoned hallway, fog, eerie shadows',
-    atmosphere: 'survival horror jump-scare',
+    match: /\b(horror|resident\s*evil|re4|re2|re8|biohazard|zombie|zombies|scary|ghost|haunted|fnaf|five\s*nights|slender|chucky|jumpscare|asylum)\b/i,
+    world: 'dark terrifying abandoned corridor with fog and eerie shadows',
   },
   gta: {
-    match: /\b(gta|gta5|gta\s*v|grand\s*theft\s*auto|heist|los\s*santos|trevor|franklin|michael)\b/i,
-    threat: 'distant speeding police cruiser and helicopter behind subject, isolated from foreground character',
-    world: 'Los Santos city streets, neon lights',
-    atmosphere: 'high-octane action heist',
+    match: /\b(gta|gta5|gta\s*v|grand\s*theft\s*auto|heist|los\s*santos|trevor|franklin|michael|supercar)\b/i,
+    world: 'Los Santos city street with neon lights and sports car',
   },
   fps: {
     match: /\b(fps|shooter|valorant|cod|call\s*of\s*duty|warzone|pubg|apex|clutch|csgo|counter\s*strike)\b/i,
-    threat: 'distant tactical enemy silhouette behind subject, isolated from foreground character',
-    world: 'tactical arena, smoke haze, bullet tracers',
-    atmosphere: 'intense clutch moment',
+    world: 'tactical arena with smoke haze and bullet tracers',
+  },
+  vlogs: {
+    match: /\b(vlog|vlogs|vlogger|irl|travel|daily\s*vlog|challenge)\b/i,
+    world: 'bright scenic outdoor vlog location with golden hour sunlight',
   },
   roblox: {
     match: /\b(roblox|bloxd|obby|brookhaven)\b/i,
-    threat: 'distant obstacle course challenge behind subject, isolated from foreground character',
-    world: 'colorful blocky avatar world',
-    atmosphere: 'playful viral gaming',
+    world: 'colorful blocky obstacle course world',
   },
 };
 
@@ -126,16 +125,13 @@ const SOLO_CREATURE_REGEX = /\b(creeper|mutant\s*creeper|enderman|warden|herobri
 
 const EXPLICIT_HUMAN_REGEX = /\b(streamer|streamers|youtuber|youtubers|creator|creators|gamer|gamers|vlogger|vloggers|facecam|selfie|player|players|person|people|human|humans|man|men|woman|women|boy|boys|girl|girls|guy|guys|dude|bro)\b/i;
 
-const THREAT_ENTITY_REGEX = /\b(mutant\s*creeper|mutant\s*zombie|mutant\s*monster|giant\s*creeper|giant\s*zombie|police\s*cruiser|speeding\s*sports\s*car|creeper|zombie|zombies|skeleton|skeletons|enderman|herobrine|warden|wither|ghost|ghosts|monster|monsters|demon|demons|alien|aliens|police|cops|swat|killer|enemy|boss|beast|dragon)\b/i;
-
 /**
- * Analyzes raw prompt to extract subject classification, creator, genre, and secondary threats.
+ * Analyzes raw prompt to extract subject classification, creator, and genre.
  */
 function detectSubjectType(cleanText, options = {}) {
   const { hasPrimaryImage = false } = options;
   const lower = cleanText.toLowerCase();
 
-  // 1. Detect Creator match
   let matchedCreator = null;
   for (const [_, data] of Object.entries(CREATOR_PATTERNS)) {
     if (data.match.test(lower)) {
@@ -144,7 +140,6 @@ function detectSubjectType(cleanText, options = {}) {
     }
   }
 
-  // 2. Detect Genre match
   let matchedGenre = null;
   for (const [_, data] of Object.entries(GENRE_PATTERNS)) {
     if (data.match.test(lower)) {
@@ -159,10 +154,6 @@ function detectSubjectType(cleanText, options = {}) {
   const isObject = OBJECT_REGEX.test(lower);
   const isSoloCreature = SOLO_CREATURE_REGEX.test(lower) && !hasExplicitHuman && !matchedCreator && !hasPrimaryImage;
 
-  // Human Streamer classification:
-  // Must have primary image, matched creator, or explicit human keyword (streamer, youtuber, etc.)
-  // When an animal/vehicle/object is the sole subject (e.g. "a cat with mouth open"),
-  // it is strictly non-human even if words like "reaction" or "face" or "open mouth" are present.
   let isHumanStreamer = false;
   let subjectCategory = 'streamer';
 
@@ -185,30 +176,8 @@ function detectSubjectType(cleanText, options = {}) {
     isHumanStreamer = false;
     subjectCategory = 'creature';
   } else {
-    // Default fallback: if prompt mentions game world or action without human, treat as general scene
-    isHumanStreamer = false;
-    subjectCategory = 'general';
-  }
-
-  // Extract explicit threat entity if present
-  let matchedThreat = null;
-  const threatMatch = cleanText.match(THREAT_ENTITY_REGEX);
-  if (threatMatch && isHumanStreamer) {
-    matchedThreat = threatMatch[0].trim();
-  }
-
-  // Extract clean subject description isolated from threat and world
-  let cleanSubjectDesc = cleanText;
-  if (isHumanStreamer && matchedThreat) {
-    // Strip interaction phrase like "running from mutant zombie" or "facing zombie"
-    const interactionRegex = new RegExp(
-      `\\s*(?:running\\s+from|fleeing\\s+from|chased\\s+by|facing|fighting|versus|vs\\.?|against|attacked\\s+by|escaping\\s+from|and|with)\\s+.*$`,
-      'i'
-    );
-    const stripped = cleanText.replace(interactionRegex, '').trim();
-    if (stripped) {
-      cleanSubjectDesc = stripped;
-    }
+    isHumanStreamer = true;
+    subjectCategory = 'streamer';
   }
 
   return {
@@ -217,31 +186,67 @@ function detectSubjectType(cleanText, options = {}) {
     subjectCategory,
     matchedCreator,
     matchedGenre,
-    matchedThreat,
-    cleanSubjectDesc,
   };
+}
+
+/**
+ * Parses user input into subject, background, and atmosphere components.
+ */
+function parseSubjectAndBackground(cleanUserText, meta) {
+  let text = cleanUserText
+    .replace(/\b(only\s+one\s+face|single\s+face|no\s+two\s+heads|exactly\s+one\s+person|16:9|widescreen)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const clauses = text.split(',').map(c => c.trim()).filter(Boolean);
+
+  if (clauses.length >= 2) {
+    const rawSubj = clauses[0];
+    const rawBg = clauses[1];
+    const rawAtmos = clauses.slice(2).join(', ');
+    return { rawSubj, rawBg, rawAtmos };
+  }
+
+  // Single-clause prompt
+  let defaultBg = 'colorful modern gaming room studio';
+  if (meta.matchedCreator && meta.matchedCreator.defaultWorld) {
+    defaultBg = meta.matchedCreator.defaultWorld;
+  } else if (meta.matchedGenre && meta.matchedGenre.world) {
+    defaultBg = meta.matchedGenre.world;
+  } else if (meta.subjectCategory === 'animal') {
+    defaultBg = 'living room interior';
+  } else if (meta.subjectCategory === 'vehicle') {
+    defaultBg = 'city highway with neon lights';
+  } else if (meta.subjectCategory === 'object') {
+    defaultBg = 'dungeon interior with glowing lights';
+  }
+
+  return {
+    rawSubj: text,
+    rawBg: defaultBg,
+    rawAtmos: '',
+  };
+}
+
+/**
+ * Truncates string by word count.
+ */
+function truncateWords(str, maxWords) {
+  const words = str.split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) return str;
+  return words.slice(0, maxWords).join(' ');
 }
 
 /**
  * enhancePrompt(rawPrompt, options) -> string
  *
- * Implements Context-Aware Three-Zone Spatial Composition Grammar (R3):
- *   Zone 1 (Foreground Subject): Explicit positioning ('foreground solo subject on the right'
- *     or 'foreground streamer portrait on the right'), strict single-subject tags ('solo,
- *     exactly one person, single subject, sharp focus'), clean anatomy and facial features
- *     ('clean skin, realistic skin texture, coherent eyes, expressive mouth, zero monster features,
- *     zero mutant traits').
- *   Zone 2 (Optical Depth Demarcation): 'optical bokeh, shallow depth of field, blurred
- *     background, strong depth separation between foreground and background'.
- *   Zone 3 (Distant Background): Game world threats, monsters, environment placed strictly
- *     in the background / opposite third ('in the deep background on the left', 'distant
- *     Minecraft creeper behind subject, isolated from foreground character').
+ * Guaranteed <= 45 words / <= 60 CLIP tokens:
+ * Format:
+ *   traunathumb, youtube thumbnail, solo <subject> on the right, <background> on the left, cinematic lighting, 16:9
  */
 function enhancePrompt(rawPrompt = '', options = {}) {
   const {
     hasPrimaryImage = false,
-    thumbnailText = '',
-    qualityMode = 'ultra',
   } = options;
 
   let text = (rawPrompt || '').trim();
@@ -249,109 +254,52 @@ function enhancePrompt(rawPrompt = '', options = {}) {
   // Strip technical trigger phrases if user accidentally typed them
   let cleanUserText = text
     .replace(/traunathumb,?\s*/gi, '')
-    .replace(/professional youtube gaming thumbnail,?\s*/gi, '')
+    .replace(/professional\s+youtube\s+gaming\s+thumbnail,?\s*/gi, '')
+    .replace(/youtube\s+gaming\s+thumbnail,?\s*/gi, '')
+    .replace(/youtube\s+thumbnail,?\s*/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
 
-  // If prompt is empty, provide a clean default streamer prompt
   if (!cleanUserText) {
-    cleanUserText = 'screaming gaming streamer with headphones';
+    cleanUserText = 'shocked gaming streamer with headphones';
   }
 
-  const TRIGGER = 'traunathumb, professional youtube gaming thumbnail';
-
-  // Extract subject type and semantic metadata
   const meta = detectSubjectType(cleanUserText, { hasPrimaryImage });
+  const { rawSubj, rawBg, rawAtmos } = parseSubjectAndBackground(cleanUserText, meta);
 
-  // ── ZONE 1: Foreground Subject Zone ─────────────────────────────
-  let zone1 = '';
-
-  if (meta.isHumanStreamer) {
-    // Explicit positioning & strict single-subject singularity tags
-    const pos = 'in foreground on the right, foreground streamer portrait on the right';
-    const singularity = 'solo, exactly one person, single subject, sharp focus';
-    const anatomy = 'clean skin, realistic skin texture, coherent eyes, expressive mouth, zero monster features, zero mutant traits';
-
-    let specificDesc = '';
-    if (meta.matchedCreator) {
-      specificDesc = meta.matchedCreator.face;
-    } else if (hasPrimaryImage) {
-      specificDesc = 'uploaded streamer portrait with expressive reaction face';
-    } else {
-      // Use clean isolated subject text, ensuring streamer identity is clear and threat is removed from Zone 1
-      specificDesc = meta.cleanSubjectDesc || cleanUserText;
-    }
-
-    zone1 = `${pos}, ${singularity}, ${anatomy}, ${specificDesc}`;
-  } else {
-    // Non-Human Subject (animal, vehicle, object, or solitary creature)
-    // NEVER inject human streamer face
-    const pos = 'in foreground on the right, foreground solo subject on the right';
-    const singularity = 'solo, single subject, sharp focus';
-
-    let anatomy = '';
-    if (meta.subjectCategory === 'animal') {
-      anatomy = 'clean mouth anatomy, realistic fur, coherent eyes, expressive mouth, zero monster features, zero mutant traits';
-    } else if (meta.subjectCategory === 'vehicle') {
-      anatomy = 'flawless metallic reflections, realistic textures, coherent geometry, zero monster features, zero mutant traits';
-    } else if (meta.subjectCategory === 'object') {
-      anatomy = 'sharp details, realistic textures, coherent geometry, zero monster features, zero mutant traits';
-    } else {
-      anatomy = 'coherent anatomy, realistic textures, zero duplicate heads, zero conjoined features';
-    }
-
-    zone1 = `${pos}, ${singularity}, ${anatomy}, ${cleanUserText}`;
+  // 1. Clean subject
+  let subj = rawSubj.replace(/\b(on\s+the\s+(?:right|left)|in\s+foreground)\b/gi, '').trim();
+  if (meta.matchedCreator && subj.length < 20) {
+    subj = meta.matchedCreator.face;
   }
-
-  // ── ZONE 2: Optical Depth Demarcation ───────────────────────────
-  const zone2 = 'optical bokeh, shallow depth of field, blurred background, strong depth separation between foreground and background, optical bokeh separation, depth of field separation';
-
-  // ── ZONE 3: Distant Background Zone ─────────────────────────────
-  const isolationTarget = meta.isHumanStreamer ? 'isolated from foreground character' : 'isolated from foreground subject';
-  let zone3 = 'in the deep background on the left';
-
-  if (meta.matchedThreat) {
-    zone3 += `, distant ${meta.matchedThreat} behind subject, ${isolationTarget}`;
-  } else if (meta.matchedGenre && meta.matchedGenre.threat && meta.isHumanStreamer) {
-    zone3 += `, ${meta.matchedGenre.threat}`;
+  if (!/\b(solo|single)\b/i.test(subj)) {
+    subj = `solo ${subj}`;
   }
+  const subjWords = truncateWords(subj, 14);
 
-  if (meta.matchedGenre) {
-    zone3 += `, ${meta.matchedGenre.world}, ${isolationTarget}`;
-  } else {
-    if (meta.subjectCategory === 'animal') {
-      zone3 += `, soft blurred living room interior, ${isolationTarget}`;
-    } else if (meta.subjectCategory === 'vehicle') {
-      zone3 += `, distant highway cityscape, ${isolationTarget}`;
-    } else if (meta.subjectCategory === 'object') {
-      zone3 += `, soft blurred ambient room, ${isolationTarget}`;
-    } else {
-      zone3 += `, colorful modern gaming room studio, ${isolationTarget}`;
+  // 2. Clean background
+  let bg = rawBg.replace(/\b(in\s+(?:the\s+)?background|on\s+the\s+(?:right|left))\b/gi, '').trim();
+  const bgWords = truncateWords(bg, 12);
+
+  // 3. Atmosphere / Lighting suffix
+  let atmosPart = '';
+  if (rawAtmos) {
+    const atmosClean = rawAtmos
+      .replace(/\b(cinematic\s+lighting|16:9|widescreen|high\s+contrast)\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (atmosClean) {
+      atmosPart = `${truncateWords(atmosClean, 4)}, `;
     }
   }
 
-  // ── ZONE 4: Lighting & Cinematography ───────────────────────────
-  const lighting = meta.matchedCreator
-    ? meta.matchedCreator.lighting
-    : 'cinematic high contrast lighting, vibrant rim lights';
-
-  // ── ZONE 5: Format & Model Directives ───────────────────────────
-  const format = 'professional YouTube thumbnail composition, 16:9 widescreen aspect ratio, 16:9, no text, no watermark, no split screen, no collage';
-
-  // Assemble full prompt
-  const fullPrompt = [
-    TRIGGER,
-    zone1,
-    zone2,
-    zone3,
-    lighting,
-    format,
-  ].filter(Boolean).join(', ');
+  // 4. Assemble full prompt
+  const fullPrompt = `traunathumb, youtube thumbnail, ${subjWords} on the right, ${bgWords} on the left, ${atmosPart}cinematic lighting, 16:9`;
 
   return fullPrompt;
 }
 
-// Attach constants and helpers to enhancePrompt
+// Attach constants and helpers
 enhancePrompt.ANTI_HYBRID_NEGATIVE_MATRIX = ANTI_HYBRID_NEGATIVE_MATRIX;
 enhancePrompt.DEFAULT_NEGATIVE_PROMPT = DEFAULT_NEGATIVE_PROMPT;
 enhancePrompt.buildNegativePrompt = buildNegativePrompt;
@@ -365,4 +313,3 @@ module.exports = {
   CREATOR_PATTERNS,
   GENRE_PATTERNS,
 };
-

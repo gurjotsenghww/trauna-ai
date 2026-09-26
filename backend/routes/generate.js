@@ -123,11 +123,11 @@ router.post('/', uploadFields, async (req, res) => {
     const defaultSteps = 4;
     const numSteps = customSteps && !isNaN(parseInt(customSteps, 10)) ? Math.min(parseInt(customSteps, 10), 4) : defaultSteps;
 
-    // Aspect-ratio buckets:
-    //   - Standard / Ultra: 1152x648 (optimal 16:9 bucket avoiding wide-canvas duplicate nucleation)
-    //   - Fast: 1024x576 (preview bucket)
-    const defaultWidth  = isFast ? 1024 : 1152;
-    const defaultHeight = isFast ? 576  : 648;
+    // Aspect-ratio bucket: 1024x576 (~0.59 MP, 16:9)
+    // Fits strictly within the SDXL single-subject attention receptive field,
+    // eliminating dual-head nucleation. Downscaled/upscaled cleanly via Sharp Lanczos3 to 1280x720.
+    const defaultWidth  = 1024;
+    const defaultHeight = 576;
     const nativeWidth   = req.body.width ? parseInt(req.body.width, 10) : defaultWidth;
     const nativeHeight  = req.body.height ? parseInt(req.body.height, 10) : defaultHeight;
 
