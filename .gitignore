@@ -29,6 +29,7 @@ ai/models/cache/
 ai/cache/
 ai/models/lora/sdxl-lora-step-*
 dataset/training_ready*/images/
+dataset/training_ready*/captions/
 dataset/training_creators_3000/images/
 dataset/creators/
 
