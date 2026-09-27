@@ -76,6 +76,9 @@ const GAME_STYLES = {
 
 const DEFAULT_STYLE = GAME_STYLES.other;
 
+// ── Blocky genre list — needs photorealistic override ─────────────
+const BLOCKY_GAMES = new Set(['minecraft', 'minecraft_hardcore', 'roblox']);
+
 /**
  * buildPrompt(options) -> string
  *
@@ -91,20 +94,36 @@ function buildPrompt(options = {}) {
 
   const style = GAME_STYLES[game] || DEFAULT_STYLE;
   const desc = (videoDescription || '').trim();
+  const isBlockyGame = BLOCKY_GAMES.has(game);
 
   let subjectPart = '';
   if (hasPrimaryImage) {
-    subjectPart = 'solo uploaded streamer portrait with expressive reaction face on the right';
+    // Uploaded face — always photorealistic, always front-facing
+    subjectPart = isBlockyGame
+      ? 'solo photorealistic human gaming streamer portrait, front-facing, looking at camera, on the right'
+      : 'solo gaming streamer portrait, front-facing, looking at camera, expressive reaction face, on the right';
   } else if (desc) {
     const meta = detectSubjectType(desc, { hasPrimaryImage });
     let s = desc.replace(/\b(on\s+the\s+(?:right|left)|in\s+foreground)\b/gi, '').trim();
     if (!/\b(solo|single)\b/i.test(s)) {
       s = `solo ${s}`;
     }
-    const words = s.split(/\s+/).slice(0, 14).join(' ');
+    // Front-facing + photorealistic overrides for human subjects
+    if (meta.isHumanStreamer) {
+      if (isBlockyGame && !/photorealistic/.test(s)) {
+        s = s.replace(/^solo\s+/i, 'solo photorealistic human ');
+      }
+      if (!/\b(front.facing|looking at|facing camera|portrait)\b/i.test(s)) {
+        s = s + ', front-facing, looking at camera';
+      }
+    }
+    const words = s.split(/\s+/).slice(0, 18).join(' ');
     subjectPart = `${words} on the right`;
   } else {
-    subjectPart = 'solo screaming excited gaming streamer with headphones on the right';
+    // Default: no description, no image — always safe screaming face front-on
+    subjectPart = isBlockyGame
+      ? 'solo photorealistic human gaming streamer, screaming shocked, front-facing, looking at camera, on the right'
+      : 'solo screaming shocked gaming streamer with LED headset, front-facing, looking at camera, on the right';
   }
 
   const bgPart = style.environment;

@@ -228,13 +228,11 @@ function parseSubjectAndBackground(cleanUserText, meta) {
   };
 }
 
-/**
- * Truncates string by word count.
- */
 function truncateWords(str, maxWords) {
   const words = str.split(/\s+/).filter(Boolean);
   if (words.length <= maxWords) return str;
-  return words.slice(0, maxWords).join(' ');
+  let cut = words.slice(0, maxWords).join(' ');
+  return cut.replace(/\s+(with|and|in|at|on|of|the|a|an|to|for|from|shooting|fiery)$/i, '').trim();
 }
 
 /**
@@ -273,13 +271,26 @@ function enhancePrompt(rawPrompt = '', options = {}) {
     subj = meta.matchedCreator.face;
   }
   if (!/\b(solo|single)\b/i.test(subj)) {
-    subj = `solo ${subj}`;
+    subj = `solo ${subj.replace(/^a\s+/i, '')}`;
   }
-  const subjWords = truncateWords(subj, 14);
+
+  // ── Orientation anchor: force camera-facing portrait to prevent rear/silhouette renders ──
+  if (meta.isHumanStreamer && !/\b(front.facing|looking at|facing camera|portrait)\b/i.test(subj)) {
+    subj = subj + ', front-facing, looking at camera';
+  }
+
+  // ── Style override: prevent blocky avatar bleed when Minecraft/Roblox genre + human subject ──
+  const BLOCKY_GENRE_REGEX = /\b(minecraft|mc|roblox|bloxd|blocky)\b/i;
+  if (meta.isHumanStreamer && BLOCKY_GENRE_REGEX.test(rawBg + ' ' + rawSubj) && !/photorealistic/.test(subj)) {
+    subj = subj.replace(/^solo\s+/i, 'solo photorealistic human ');
+  }
+
+  // Token budget: subject zone capped at 18 words (was 15) to accommodate orientation tokens
+  const subjWords = truncateWords(subj, 18);
 
   // 2. Clean background
   let bg = rawBg.replace(/\b(in\s+(?:the\s+)?background|on\s+the\s+(?:right|left))\b/gi, '').trim();
-  const bgWords = truncateWords(bg, 12);
+  const bgWords = truncateWords(bg, 16);
 
   // 3. Atmosphere / Lighting suffix
   let atmosPart = '';
@@ -299,13 +310,69 @@ function enhancePrompt(rawPrompt = '', options = {}) {
   return fullPrompt;
 }
 
+/**
+ * getDualStreamPrompts(rawPrompt, options) -> { subjectPrompt, worldPrompt, isDualStreamEligible }
+ *
+ * Decomposes user request into two specialized prompts:
+ * 1. Stream A (768x768 Portrait): Dedicated camera-facing streamer reaction portrait.
+ * 2. Stream B (1024x576 Scene): Clean game environment with zero human tokens.
+ */
+function getDualStreamPrompts(rawPrompt = '', options = {}) {
+  const { hasPrimaryImage = false } = options;
+  let text = (rawPrompt || '').trim();
+
+  let cleanUserText = text
+    .replace(/traunathumb,?\s*/gi, '')
+    .replace(/professional\s+youtube\s+gaming\s+thumbnail,?\s*/gi, '')
+    .replace(/youtube\s+gaming\s+thumbnail,?\s*/gi, '')
+    .replace(/youtube\s+thumbnail,?\s*/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleanUserText) {
+    cleanUserText = 'shocked gaming streamer with headphones';
+  }
+
+  const meta = detectSubjectType(cleanUserText, { hasPrimaryImage });
+  const { rawSubj, rawBg, rawAtmos } = parseSubjectAndBackground(cleanUserText, meta);
+
+  // 1. Dedicated Subject Prompt (768x768 Portrait)
+  let subj = rawSubj.replace(/\b(on\s+the\s+(?:right|left)|in\s+foreground)\b/gi, '').trim();
+  if (meta.matchedCreator && subj.length < 20) {
+    subj = meta.matchedCreator.face;
+  }
+  if (!/\b(solo|single)\b/i.test(subj)) {
+    subj = `solo ${subj.replace(/^a\s+/i, '')}`;
+  }
+  if (meta.isHumanStreamer && !/\b(front.facing|looking at|facing camera|portrait)\b/i.test(subj)) {
+    subj = subj + ', front-facing, looking directly at camera';
+  }
+  const subjWords = truncateWords(subj, 20);
+  const subjectPrompt = `traunathumb, ${subjWords}, expressive reaction face with open mouth, wearing LED gaming headphones, sharp focus, 1:1 portrait`;
+
+  // 2. Dedicated World Prompt (1024x576 Scene)
+  let bg = rawBg.replace(/\b(in\s+(?:the\s+)?background|on\s+the\s+(?:right|left))\b/gi, '').trim();
+  const bgWords = truncateWords(bg, 18);
+  let atmosClean = (rawAtmos || '').replace(/\b(cinematic\s+lighting|16:9|widescreen|high\s+contrast)\b/gi, '').trim();
+  const atmosPart = atmosClean ? `${truncateWords(atmosClean, 5)}, ` : '';
+  const worldPrompt = `traunathumb, ${bgWords}, ${atmosPart}cinematic lighting, vibrant saturated atmosphere, 16:9 widescreen`;
+
+  return {
+    subjectPrompt,
+    worldPrompt,
+    isDualStreamEligible: meta.isHumanStreamer,
+  };
+}
+
 // Attach constants and helpers
 enhancePrompt.ANTI_HYBRID_NEGATIVE_MATRIX = ANTI_HYBRID_NEGATIVE_MATRIX;
 enhancePrompt.DEFAULT_NEGATIVE_PROMPT = DEFAULT_NEGATIVE_PROMPT;
 enhancePrompt.buildNegativePrompt = buildNegativePrompt;
+enhancePrompt.getDualStreamPrompts = getDualStreamPrompts;
 
 module.exports = {
   enhancePrompt,
+  getDualStreamPrompts,
   detectSubjectType,
   buildNegativePrompt,
   ANTI_HYBRID_NEGATIVE_MATRIX,
@@ -313,3 +380,4 @@ module.exports = {
   CREATOR_PATTERNS,
   GENRE_PATTERNS,
 };
+

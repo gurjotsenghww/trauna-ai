@@ -1,0 +1,8 @@
+{
+  "dataset_name": "trauna_gaming_768x768",
+  "resolution": 768,
+  "crop_method": "approach_a_portrait_lanczos3",
+  "total_pairs": 10623,
+  "errors_skipped": 0,
+  "completed_at": "2026-09-27 11:13:30"
+}

@@ -131,17 +131,38 @@ router.post('/', uploadFields, async (req, res) => {
     const nativeWidth   = req.body.width ? parseInt(req.body.width, 10) : defaultWidth;
     const nativeHeight  = req.body.height ? parseInt(req.body.height, 10) : defaultHeight;
 
-    console.log(`[Generate] Quality Mode: ${normalizedQualityMode.toUpperCase()} | Native Bucket: ${nativeWidth}x${nativeHeight} | Steps: ${numSteps} | Guidance: ${guidanceScale}`);
+    // ── Call AI service ─────────────────────────────────────────
+    let generatedImagePath = '';
 
-    // ── Call AI service (generates at native 16:9 bucket) ───────
-    const generatedImagePath = await aiService.generateImage(prompt, {
-      width:          nativeWidth,
-      height:         nativeHeight,
-      steps:          numSteps,
-      negativePrompt,
-      guidanceScale,
-      seed:           req.body.seed != null && !isNaN(parseInt(req.body.seed, 10)) ? parseInt(req.body.seed, 10) : undefined,
+    // Check if eligible for Dual-Stream (768x768 dedicated portrait + 1024x576 game world)
+    const dualStream = promptEnhancer.getDualStreamPrompts(rawPrompt || videoDescription || game, {
+      hasPrimaryImage: !!primaryImagePath,
     });
+
+    if (dualStream.isDualStreamEligible && !primaryImagePath) {
+      console.log(`[Generate] Using High-Fidelity DUAL-STREAM Engine (0 -> 50 Quality Architecture)`);
+      console.log(`[Generate] Stream A (768x768 Face):  ${dualStream.subjectPrompt.substring(0, 90)}...`);
+      console.log(`[Generate] Stream B (1024x576 World): ${dualStream.worldPrompt.substring(0, 90)}...`);
+
+      generatedImagePath = await aiService.generateDualStream(
+        dualStream.subjectPrompt,
+        dualStream.worldPrompt,
+        {
+          steps: numSteps,
+          seed: req.body.seed != null && !isNaN(parseInt(req.body.seed, 10)) ? parseInt(req.body.seed, 10) : undefined,
+        }
+      );
+    } else {
+      console.log(`[Generate] Using Single-Stream Pipeline at Native Bucket: ${nativeWidth}x${nativeHeight}`);
+      generatedImagePath = await aiService.generateImage(prompt, {
+        width:          nativeWidth,
+        height:         nativeHeight,
+        steps:          numSteps,
+        negativePrompt,
+        guidanceScale,
+        seed:           req.body.seed != null && !isNaN(parseInt(req.body.seed, 10)) ? parseInt(req.body.seed, 10) : undefined,
+      });
+    }
 
     // ── Composite: overlay text, downsample to strictly 1280x720 ──────
     const composeResult = await compositeService.compose({

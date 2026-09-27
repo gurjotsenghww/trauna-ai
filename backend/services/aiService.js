@@ -17,6 +17,8 @@ const AI_DIR      = path.join(__dirname, '..', '..', 'ai');
 const PYTHON_SCRIPT = path.join(AI_DIR, 'generate.py');
 const OUTPUT_DIR  = path.join(__dirname, '..', 'outputs');
 
+const DUAL_STREAM_SCRIPT = path.join(AI_DIR, 'generate_dual_stream.py');
+
 // Detect python executable
 const PYTHON_BIN = process.platform === 'win32' ? 'python' : 'python3';
 const VENV_PYTHON = path.join(AI_DIR, 'venv', 'Scripts', 'python.exe');  // Windows venv
@@ -42,6 +44,65 @@ async function generateImage(prompt, options = {}) {
   const currentTask = queuePromise.then(() => _executeGenerate(prompt, options));
   queuePromise = currentTask.catch(() => {});
   return currentTask;
+}
+
+/**
+ * generateDualStream(subjectPrompt, worldPrompt, options) -> Promise<string>
+ *
+ * Calls the Dual-Stream 768x768 portrait + 1024x576 scene composite engine.
+ */
+async function generateDualStream(subjectPrompt, worldPrompt, options = {}) {
+  const currentTask = queuePromise.then(() => _executeDualStream(subjectPrompt, worldPrompt, options));
+  queuePromise = currentTask.catch(() => {});
+  return currentTask;
+}
+
+function _executeDualStream(subjectPrompt, worldPrompt, options = {}) {
+  return new Promise((resolve, reject) => {
+    const outputId   = uuid();
+    const outputPath = path.join(OUTPUT_DIR, `raw_dual_${outputId}.png`);
+
+    fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+
+    const steps = options.steps || 4;
+    const args = [
+      DUAL_STREAM_SCRIPT,
+      '--subject_prompt', subjectPrompt,
+      '--world_prompt',   worldPrompt,
+      '--output',         outputPath,
+      '--steps',          String(steps),
+    ];
+
+    if (options.seed != null) {
+      args.push('--seed', String(options.seed));
+    }
+
+    const pythonBin = getPythonBin();
+    console.log(`[AI Dual-Stream] Running: ${pythonBin} ${DUAL_STREAM_SCRIPT}`);
+    console.log(`[AI Dual-Stream] Output:  ${outputPath}`);
+
+    const proc = spawn(pythonBin, args, {
+      cwd: AI_DIR,
+      env: { ...process.env },
+    });
+
+    proc.stdout.on('data', d => process.stdout.write(`[AI Dual] ${d}`));
+    proc.stderr.on('data', d => process.stderr.write(`[AI Dual ERR] ${d}`));
+
+    proc.on('close', code => {
+      if (code !== 0) {
+        return reject(new Error(`AI dual-stream process exited with code ${code}`));
+      }
+      if (!fs.existsSync(outputPath)) {
+        return reject(new Error(`AI dual-stream process finished but output file not found: ${outputPath}`));
+      }
+      resolve(outputPath);
+    });
+
+    proc.on('error', err => {
+      reject(new Error(`Failed to start AI dual-stream process: ${err.message}`));
+    });
+  });
 }
 
 function _executeGenerate(prompt, options = {}) {
@@ -114,4 +175,5 @@ function _executeGenerate(prompt, options = {}) {
   });
 }
 
-module.exports = { generateImage };
+module.exports = { generateImage, generateDualStream };
+
